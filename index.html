@@ -1,14 +1,208 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Space Invaders</title>
-    <link rel="stylesheet" href="styles.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>SPACE INVADERS</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:monospace;overflow:hidden;user-select:none}
+#header{display:flex;justify-content:space-between;width:480px;max-width:95vw;padding:4px 0}
+.hud{color:#0ff;font-size:12px;text-shadow:0 0 8px #0ff;font-weight:bold}
+#lives{color:#f0f;text-shadow:0 0 8px #f0f}
+#lvl{color:#ff0;text-shadow:0 0 8px #ff0}
+canvas{display:block;border:2px solid #0ff;box-shadow:0 0 20px #0ff;background:#000;max-width:95vw}
+#mobile-controls{display:flex;gap:12px;margin-top:8px}
+.mbtn{background:rgba(0,255,255,0.1);border:2px solid #0ff;color:#0ff;font-size:18px;width:70px;height:70px;cursor:pointer;border-radius:8px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 10px #0ff;touch-action:manipulation}
+.mbtn:active{background:rgba(0,255,255,0.4)}
+#overlay{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,0.85);z-index:10;gap:16px}
+#overlay h1{color:#0ff;font-size:22px;text-shadow:0 0 20px #0ff;text-align:center;line-height:1.8}
+#overlay p{color:#ff0;font-size:11px;text-align:center;line-height:2}
+.btn{background:transparent;border:2px solid #0ff;color:#0ff;font-family:monospace;font-size:12px;padding:12px 20px;cursor:pointer;text-shadow:0 0 8px #0ff;box-shadow:0 0 10px #0ff}
+.btn:active{background:#0ff;color:#000}
+</style>
 </head>
 <body>
-    <h1>Welcome to Space Invaders!</h1>
-    <div id="gameArea"></div>
-    <script src="script.js"></script>
+<div id="header">
+<div class="hud" id="sc">SCORE: 0</div>
+<div class="hud" id="lvl">LVL: 1</div>
+<div class="hud" id="lives">VIDAS: 3</div>
+</div>
+<div style="position:relative">
+<canvas id="c" width="480" height="480"></canvas>
+<div id="overlay">
+<h1>SPACE<br>INVADERS</h1>
+<p>ROSA=30pts | VERDE=20pts | AMARELO=10pts<br>OVNI=100-300pts BONUS</p>
+<p>TECLADO: SETAS + ESPACO<br>CELULAR: BOTOES ABAIXO</p>
+<button class="btn" onclick="startGame()">INICIAR</button>
+</div>
+</div>
+<div id="mobile-controls">
+<button class="mbtn" id="lb">&#9664;</button>
+<button class="mbtn" id="fb">&#9679;</button>
+<button class="mbtn" id="rb">&#9654;</button>
+</div>
+<script>
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+let score=0,lives=3,level=1,running=false,animId;
+let player,bullets,invaders,ebullets,shields,ufo;
+let idir=1,itimer=0,idelay=40,keys={},fpress=false,fcool=0,exps=[],fc=0,utimer=0;
+
+function startGame(){
+document.getElementById('overlay').style.display='none';
+score=0;lives=3;level=1;idelay=40;
+initLevel();running=true;gameLoop();
+}
+
+function initLevel(){
+player={x:220,y:440,w:36,h:20};
+bullets=[];ebullets=[];exps=[];ufo=null;
+idir=1;itimer=0;idelay=Math.max(8,40-(level-1)*5);
+invaders=[];
+for(let r=0;r<5;r++)for(let c=0;c<11;c++)
+invaders.push({x:40+c*38,y:50+r*38,w:28,h:20,t:r<1?3:r<3?2:1,alive:true,f:0});
+shields=[];
+for(let s=0;s<4;s++){
+const sx=50+s*105,sh=[];
+for(let bx=0;bx<14;bx++)for(let by=0;by<8;by++){
+if(by===0&&(bx<2||bx>11))continue;
+if(by>=5&&bx>=4&&bx<=9)continue;
+sh.push({x:sx+bx*6,y:380+by*6,alive:true});
+}
+shields.push(sh);
+}
+updateHUD();
+}
+
+function updateHUD(){
+document.getElementById('sc').textContent='SCORE: '+score;
+document.getElementById('lvl').textContent='LVL: '+level;
+document.getElementById('lives').textContent='VIDAS: '+'♥'.repeat(lives);
+}
+
+function gameLoop(){
+if(!running)return;
+animId=requestAnimationFrame(gameLoop);fc++;
+ctx.clearRect(0,0,480,480);
+ctx.fillStyle='#0f0';ctx.fillRect(0,470,480,2);
+
+if(keys['ArrowLeft']||keys['a'])player.x=Math.max(0,player.x-4);
+if(keys['ArrowRight']||keys['d'])player.x=Math.min(444,player.x+4);
+if(fcool>0)fcool--;
+if((keys[' ']||fpress)&&fcool===0&&bullets.length<3){
+bullets.push({x:player.x+16,y:player.y});fcool=15;
+}
+
+bullets=bullets.filter(b=>b.y>-10);
+bullets.forEach(b=>b.y-=8);
+ebullets=ebullets.filter(b=>b.y<480);
+ebullets.forEach(b=>b.y+=3+level*0.5);
+
+itimer++;
+const alive=invaders.filter(i=>i.alive);
+if(itimer>=idelay){
+itimer=0;let edge=false;
+alive.forEach(i=>{i.x+=8*idir;i.f=1-i.f;if(i.x<=0||i.x+i.w>=480)edge=true;});
+if(edge){idir*=-1;alive.forEach(i=>i.y+=12);idelay=Math.max(5,idelay-1);}
+}
+
+if(fc%Math.max(20,60-level*5)===0&&alive.length>0){
+const s=alive[Math.floor(Math.random()*alive.length)];
+ebullets.push({x:s.x+12,y:s.y+s.h});
+}
+
+utimer++;
+if(utimer>600&&!ufo){ufo={x:-50,y:20};utimer=0;}
+if(ufo){ufo.x+=2;if(ufo.x>530)ufo=null;}
+
+bullets.forEach((b,bi)=>{
+alive.forEach(inv=>{
+if(b.x>inv.x&&b.x<inv.x+inv.w&&b.y>inv.y&&b.y<inv.y+inv.h){
+inv.alive=false;bullets.splice(bi,1);
+const p=inv.t===3?30:inv.t===2?20:10;score+=p;
+exps.push({x:inv.x+14,y:inv.y+10,life:20,c:inv.t===3?'#f0f':inv.t===2?'#0f0':'#ff0'});
+updateHUD();
+}});
+if(ufo&&b.x>ufo.x&&b.x<ufo.x+40&&b.y>ufo.y&&b.y<ufo.y+14){
+score+=100+Math.floor(Math.random()*200);
+exps.push({x:ufo.x+20,y:ufo.y+7,life:20,c:'#f00'});
+ufo=null;bullets.splice(bi,1);updateHUD();
+}
+bullets.forEach((b,bi)=>{
+shields.forEach(sh=>sh.forEach(bl=>{
+if(!bl.alive)return;
+if(b.x+3>bl.x&&b.x<bl.x+5&&b.y+12>bl.y&&b.y<bl.y+5){bl.alive=false;bullets.splice(bi,1);}
+}));});
+});
+
+ebullets.forEach((b,bi)=>{
+shields.forEach(sh=>sh.forEach(bl=>{
+if(!bl.alive)return;
+if(b.x+3>bl.x&&b.x<bl.x+5&&b.y+10>bl.y&&b.y<bl.y+5){bl.alive=false;ebullets.splice(bi,1);}
+}));
+if(b.x+3>player.x&&b.x<player.x+36&&b.y+10>player.y&&b.y<player.y+20){
+lives--;ebullets.splice(bi,1);
+exps.push({x:player.x+18,y:player.y+10,life:20,c:'#0ff'});
+updateHUD();if(lives<=0)gameOver();
+}
+});
+
+alive.forEach(i=>{if(i.y+i.h>=465)gameOver();});
+if(alive.length===0){level++;initLevel();}
+exps=exps.filter(e=>e.life>0);exps.forEach(e=>e.life--);
+
+shields.forEach(sh=>sh.forEach(b=>{if(b.alive){ctx.fillStyle='#0f0';ctx.fillRect(b.x,b.y,5,5);}}));
+invaders.forEach(inv=>{if(!inv.alive)return;
+const{x,y,t,f}=inv;
+ctx.shadowBlur=6;
+if(t===3){ctx.fillStyle='#f0f';ctx.shadowColor='#f0f';}
+else if(t===2){ctx.fillStyle='#0f0';ctx.shadowColor='#0f0';}
+else{ctx.fillStyle='#ff0';ctx.shadowColor='#ff0';}
+ctx.fillRect(x+4,y,20,4);ctx.fillRect(x,y+4,28,8);ctx.fillRect(x+4,y+12,6,4);ctx.fillRect(x+18,y+12,6,4);
+if(f===0){ctx.fillRect(x,y+8,4,4);ctx.fillRect(x+24,y+8,4,4);}
+else{ctx.fillRect(x+2,y+12,4,4);ctx.fillRect(x+22,y+12,4,4);}
+ctx.shadowBlur=0;});
+
+if(ufo){ctx.fillStyle='#f00';ctx.shadowBlur=10;ctx.shadowColor='#f00';
+ctx.fillRect(ufo.x+10,ufo.y,20,4);ctx.fillRect(ufo.x+4,ufo.y+4,32,8);ctx.fillRect(ufo.x,ufo.y+8,40,6);
+ctx.shadowBlur=0;}
+
+ctx.fillStyle='#0ff';ctx.shadowBlur=8;ctx.shadowColor='#0ff';
+bullets.forEach(b=>ctx.fillRect(b.x,b.y,3,12));
+ctx.fillStyle='#f66';ctx.shadowColor='#f66';
+ebullets.forEach(b=>ctx.fillRect(b.x,b.y,3,10));
+ctx.shadowBlur=0;
+
+ctx.fillStyle='#0ff';ctx.shadowBlur=8;ctx.shadowColor='#0ff';
+ctx.fillRect(player.x+15,player.y,6,5);ctx.fillRect(player.x+10,player.y+5,16,5);ctx.fillRect(player.x,player.y+10,36,10);
+ctx.shadowBlur=0;
+
+exps.forEach(e=>{
+ctx.globalAlpha=e.life/20;ctx.fillStyle=e.c;ctx.shadowBlur=15;ctx.shadowColor=e.c;
+for(let i=0;i<8;i++){const a=i/8*Math.PI*2,r=(20-e.life)*1.5;ctx.fillRect(e.x+Math.cos(a)*r-2,e.y+Math.sin(a)*r-2,4,4);}
+ctx.globalAlpha=1;ctx.shadowBlur=0;});
+}
+
+function gameOver(){
+running=false;cancelAnimationFrame(animId);
+const o=document.getElementById('overlay');o.style.display='flex';
+o.innerHTML='<h1 style="color:'+(lives<=0?'#f00':'#0ff')+'">'+(lives<=0?'GAME<br>OVER':'VITORIA!')+
+'</h1><p style="color:#0ff">PONTUACAO: <span style="color:#ff0">'+score+'</span></p>'+
+'<button class="btn" onclick="startGame()">JOGAR NOVAMENTE</button>';
+}
+
+document.addEventListener('keydown',e=>{keys[e.key]=true;if(e.key===' ')e.preventDefault();});
+document.addEventListener('keyup',e=>{keys[e.key]=false;});
+const lb=document.getElementById('lb'),rb=document.getElementById('rb'),fb=document.getElementById('fb');
+lb.addEventListener('touchstart',e=>{e.preventDefault();keys['ArrowLeft']=true;});
+lb.addEventListener('touchend',e=>{e.preventDefault();keys['ArrowLeft']=false;});
+rb.addEventListener('touchstart',e=>{e.preventDefault();keys['ArrowRight']=true;});
+rb.addEventListener('touchend',e=>{e.preventDefault();keys['ArrowRight']=false;});
+fb.addEventListener('touchstart',e=>{e.preventDefault();fpress=true;});
+fb.addEventListener('touchend',e=>{e.preventDefault();fpress=false;});
+lb.addEventListener('mousedown',()=>keys['ArrowLeft']=true);lb.addEventListener('mouseup',()=>keys['ArrowLeft']=false);
+rb.addEventListener('mousedown',()=>keys['ArrowRight']=true);rb.addEventListener('mouseup',()=>keys['ArrowRight']=false);
+fb.addEventListener('mousedown',()=>fpress=true);fb.addEventListener('mouseup',()=>fpress=false);
+</script>
 </body>
 </html>
