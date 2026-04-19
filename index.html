@@ -54,7 +54,7 @@ let idir=1,itimer=0,idelay=40,keys={},fpress=false,fcool=0,exps=[],fc=0,utimer=0
 let victoryTimer=0,introAnimId=0,introAliens=[],introStars=[];
 const HS_KEY='space_invaders_high_score';
 const LB_KEY='space_invaders_top10';
-const POWERUP_SPAWN_CHANCE=0.24;
+const POWERUP_SPAWN_PROBABILITY=0.24;
 const POWERUP_DURATION_FRAMES=520;
 const SHIELD_HIT_DEPLETION=90;
 const VICTORY_ANIMATION_FRAMES=90;
@@ -104,7 +104,7 @@ leaderboardHTML()+
 function renderEndOverlay(isVictory){
 const o=document.getElementById('overlay');
 o.style.display='flex';
-o.innerHTML='<h1 style="color:'+(isVictory?'#0ff':'#f00')+'">'+(isVictory?'VITORIA!':'GAME<br>OVER')+
+o.innerHTML='<h1 style="color:'+(isVictory?'#0ff':'#f00')+'">'+(isVictory?'VITÓRIA!':'GAME<br>OVER')+
 '</h1><p style="color:#0ff">PONTUACAO: <span style="color:#ff0">'+score+'</span><br>RECORDE: <span style="color:#ff0">'+highScore+'</span></p>'+
 leaderboardHTML()+'<button class="btn" onclick="startGame()">JOGAR NOVAMENTE</button>';
 }
@@ -219,7 +219,7 @@ updateHUD();
 }
 
 function spawnPowerUp(inv){
-if(Math.random()>POWERUP_SPAWN_CHANCE)return;
+if(Math.random()>POWERUP_SPAWN_PROBABILITY)return;
 const type=Math.random()<0.5?'double':'shield';
 powerups.push({x:inv.x+10,y:inv.y+8,w:12,h:12,type,vy:1.7});
 }
@@ -371,7 +371,7 @@ exps.push({x:b.x,y:b.y,life:14,c:'#7fffd4'});
 lives--;
 exps.push({x:player.x+18,y:player.y+10,life:20,c:'#0ff'});
 playPlayerDeath();vibrateDeath();
-if(lives<=0){ebullets.splice(bi,1);updateHUD();gameOver();return;}
+if(lives<=0){updateHUD();gameOver();return;}
 }
 ebullets.splice(bi,1);
 updateHUD();
@@ -386,7 +386,7 @@ playTone('triangle',VICTORY_TONE.freq,VICTORY_TONE.dur,VICTORY_TONE.vol,VICTORY_
 if(victoryTimer>0){
 if(fc%6===0)exps.push({x:80+Math.random()*320,y:120+Math.random()*180,life:18,c:['#0ff','#ff0','#f0f'][Math.floor(Math.random()*3)]});
 ctx.globalAlpha=0.6+Math.sin(fc*0.2)*0.4;
-ctx.fillStyle='#ff0';ctx.font='bold 34px monospace';ctx.textAlign='center';ctx.fillText('VITORIA!',240,235);
+ctx.fillStyle='#ff0';ctx.font='bold 34px monospace';ctx.textAlign='center';ctx.fillText('VITÓRIA!',240,235);
 ctx.globalAlpha=1;
 victoryTimer--;
 if(victoryTimer===0){
