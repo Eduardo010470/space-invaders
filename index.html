@@ -53,6 +53,8 @@ let highScore=parseInt(localStorage.getItem(HS_KEY)||'0',10)||0;
 const GAME_OVER_DELAY_MS=140;
 const MARCH_BASE_DELAY=16,MARCH_MIN_DELAY=5,MARCH_TOTAL_INVADERS=55,MARCH_SPEED_STEP=4;
 let ac,master,marchStep=0,marchClock=0,ufoOsc,ufoGain;
+const canUseVibration=typeof navigator!=='undefined'&&typeof navigator.vibrate==='function'&&window.isSecureContext;
+let vibrationEnabled=false;
 
 function initAudio(){
 if(!ac){
@@ -60,6 +62,7 @@ ac=new (window.AudioContext||window.webkitAudioContext)();
 master=ac.createGain();master.gain.value=0.22;master.connect(ac.destination);
 }
 if(ac.state==='suspended')ac.resume();
+enableVibration();
 }
 
 function playTone(type,freq,dur,vol,slide){
@@ -105,8 +108,17 @@ ufoOsc.connect(ufoGain);ufoGain.connect(master);ufoOsc.start(t);ufoOsc.stop(t+0.
 ufoOsc.onended=()=>{ufoOsc=null;ufoGain=null;};
 }
 
-function vibrateShoot(){navigator.vibrate?.(12);}
-function vibrateDeath(){navigator.vibrate?.([40,35,70]);}
+// Android Chrome allows vibration only in secure contexts and after user interaction.
+function enableVibration(){
+if(!canUseVibration||vibrationEnabled)return;
+vibrationEnabled=true;
+navigator.vibrate(0);
+}
+// Keep vibration calls behind one helper so unsupported devices/desktop remain unaffected.
+function vibrate(pattern){if(vibrationEnabled&&canUseVibration)navigator.vibrate(pattern);}
+function vibrateShoot(){vibrate(50);}
+function vibrateDeath(){vibrate(200);}
+function vibrateGameOver(){vibrate([100,50,100]);}
 function saveHighScore(){localStorage.setItem(HS_KEY,String(highScore));}
 function addScore(points){
 score+=points;
@@ -261,6 +273,7 @@ function gameOver(){
 running=false;cancelAnimationFrame(animId);
 if(score>highScore){highScore=score;saveHighScore();}
 playGameOver();
+vibrateGameOver();
 const o=document.getElementById('overlay');o.style.display='flex';
 o.innerHTML='<h1 style="color:'+(lives<=0?'#f00':'#0ff')+'">'+(lives<=0?'GAME<br>OVER':'VITORIA!')+
 '</h1><p style="color:#0ff">PONTUACAO: <span style="color:#ff0">'+score+'</span><br>RECORDE: <span style="color:#ff0">'+highScore+'</span></p>'+
