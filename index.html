@@ -25,6 +25,7 @@ canvas{display:block;border:2px solid #0ff;box-shadow:0 0 20px #0ff;background:#
 <body>
 <div id="header">
 <div class="hud" id="sc">SCORE: 0</div>
+<div class="hud" id="hi">HI: 0</div>
 <div class="hud" id="lvl">LVL: 1</div>
 <div class="hud" id="lives">VIDAS: 3</div>
 </div>
@@ -47,10 +48,73 @@ const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
 let score=0,lives=3,level=1,running=false,animId;
 let player,bullets,invaders,ebullets,shields,ufo;
 let idir=1,itimer=0,idelay=40,keys={},fpress=false,fcool=0,exps=[],fc=0,utimer=0;
+const HS_KEY='space_invaders_high_score';
+let highScore=Number(localStorage.getItem(HS_KEY)||0);
+let ac,master,marchStep=0,marchClock=0,ufoOsc,ufoGain;
+
+function initAudio(){
+if(!ac){
+ac=new (window.AudioContext||window.webkitAudioContext)();
+master=ac.createGain();master.gain.value=0.22;master.connect(ac.destination);
+}
+if(ac.state==='suspended')ac.resume();
+}
+
+function playTone(type,freq,dur,vol,slide){
+if(!ac||!master)return;
+const t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();
+o.type=type;o.frequency.setValueAtTime(freq,t);
+if(slide)o.frequency.linearRampToValueAtTime(slide,t+dur);
+g.gain.setValueAtTime(0.0001,t);
+g.gain.exponentialRampToValueAtTime(vol,t+0.01);
+g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+o.connect(g);g.connect(master);o.start(t);o.stop(t+dur+0.02);
+}
+
+function playNoise(dur,vol){
+if(!ac||!master)return;
+const t=ac.currentTime,buf=ac.createBuffer(1,Math.max(1,Math.floor(ac.sampleRate*dur)),ac.sampleRate);
+const d=buf.getChannelData(0);
+for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*(1-i/d.length);
+const s=ac.createBufferSource(),f=ac.createBiquadFilter(),g=ac.createGain();
+s.buffer=buf;f.type='highpass';f.frequency.value=350;
+g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+s.connect(f);f.connect(g);g.connect(master);s.start(t);s.stop(t+dur);
+}
+
+function playShoot(){playTone('square',880,0.08,0.08,520);}
+function playExplosion(){playNoise(0.14,0.18);playTone('triangle',190,0.12,0.06,90);}
+function playPlayerDeath(){playTone('sawtooth',260,0.3,0.1,70);playNoise(0.22,0.14);}
+function playGameOver(){playTone('triangle',220,0.24,0.09,140);setTimeout(()=>playTone('triangle',170,0.35,0.09,90),140);}
+function playMarch(){
+const seq=[180,220,260,220];
+playTone('square',seq[marchStep%seq.length],0.06,0.04);
+marchStep++;
+}
+
+function startUfoSound(){
+if(!ac||!master||ufoOsc)return;
+const t=ac.currentTime;
+ufoOsc=ac.createOscillator();ufoGain=ac.createGain();
+ufoOsc.type='sawtooth';ufoOsc.frequency.setValueAtTime(720,t);ufoOsc.frequency.linearRampToValueAtTime(460,t+0.6);
+ufoGain.gain.setValueAtTime(0.0001,t);ufoGain.gain.linearRampToValueAtTime(0.05,t+0.05);ufoGain.gain.linearRampToValueAtTime(0.0001,t+0.65);
+ufoOsc.connect(ufoGain);ufoGain.connect(master);ufoOsc.start(t);ufoOsc.stop(t+0.7);
+ufoOsc.onended=()=>{ufoOsc=null;ufoGain=null;};
+}
+
+function vibrateShoot(){if(navigator.vibrate)navigator.vibrate(12);}
+function vibrateDeath(){if(navigator.vibrate)navigator.vibrate([40,35,70]);}
+function saveHighScore(){localStorage.setItem(HS_KEY,String(highScore));}
+function addScore(points){
+score+=points;
+if(score>highScore){highScore=score;saveHighScore();}
+updateHUD();
+}
 
 function startGame(){
 document.getElementById('overlay').style.display='none';
 score=0;lives=3;level=1;idelay=40;
+initAudio();updateHUD();
 initLevel();running=true;gameLoop();
 }
 
@@ -76,6 +140,7 @@ updateHUD();
 
 function updateHUD(){
 document.getElementById('sc').textContent='SCORE: '+score;
+document.getElementById('hi').textContent='HI: '+highScore;
 document.getElementById('lvl').textContent='LVL: '+level;
 document.getElementById('lives').textContent='VIDAS: '+'♥'.repeat(lives);
 }
@@ -91,6 +156,7 @@ if(keys['ArrowRight']||keys['d'])player.x=Math.min(444,player.x+4);
 if(fcool>0)fcool--;
 if((keys[' ']||fpress)&&fcool===0&&bullets.length<3){
 bullets.push({x:player.x+16,y:player.y});fcool=15;
+playShoot();vibrateShoot();
 }
 
 bullets=bullets.filter(b=>b.y>-10);
@@ -100,6 +166,11 @@ ebullets.forEach(b=>b.y+=3+level*0.5);
 
 itimer++;
 const alive=invaders.filter(i=>i.alive);
+if(alive.length>0){
+marchClock++;
+const marchDelay=Math.max(5,16-Math.floor((55-alive.length)/4));
+if(marchClock>=marchDelay){marchClock=0;playMarch();}
+}
 if(itimer>=idelay){
 itimer=0;let edge=false;
 alive.forEach(i=>{i.x+=8*idir;i.f=1-i.f;if(i.x<=0||i.x+i.w>=480)edge=true;});
@@ -112,21 +183,20 @@ ebullets.push({x:s.x+12,y:s.y+s.h});
 }
 
 utimer++;
-if(utimer>600&&!ufo){ufo={x:-50,y:20};utimer=0;}
+if(utimer>600&&!ufo){ufo={x:-50,y:20};utimer=0;startUfoSound();}
 if(ufo){ufo.x+=2;if(ufo.x>530)ufo=null;}
 
 bullets.forEach((b,bi)=>{
 alive.forEach(inv=>{
 if(b.x>inv.x&&b.x<inv.x+inv.w&&b.y>inv.y&&b.y<inv.y+inv.h){
 inv.alive=false;bullets.splice(bi,1);
-const p=inv.t===3?30:inv.t===2?20:10;score+=p;
+const p=inv.t===3?30:inv.t===2?20:10;addScore(p);playExplosion();
 exps.push({x:inv.x+14,y:inv.y+10,life:20,c:inv.t===3?'#f0f':inv.t===2?'#0f0':'#ff0'});
-updateHUD();
 }});
 if(ufo&&b.x>ufo.x&&b.x<ufo.x+40&&b.y>ufo.y&&b.y<ufo.y+14){
-score+=100+Math.floor(Math.random()*200);
+addScore(100+Math.floor(Math.random()*200));playExplosion();
 exps.push({x:ufo.x+20,y:ufo.y+7,life:20,c:'#f00'});
-ufo=null;bullets.splice(bi,1);updateHUD();
+ufo=null;bullets.splice(bi,1);
 }
 bullets.forEach((b,bi)=>{
 shields.forEach(sh=>sh.forEach(bl=>{
@@ -143,6 +213,7 @@ if(b.x+3>bl.x&&b.x<bl.x+5&&b.y+10>bl.y&&b.y<bl.y+5){bl.alive=false;ebullets.spli
 if(b.x+3>player.x&&b.x<player.x+36&&b.y+10>player.y&&b.y<player.y+20){
 lives--;ebullets.splice(bi,1);
 exps.push({x:player.x+18,y:player.y+10,life:20,c:'#0ff'});
+playPlayerDeath();vibrateDeath();
 updateHUD();if(lives<=0)gameOver();
 }
 });
@@ -185,24 +256,26 @@ ctx.globalAlpha=1;ctx.shadowBlur=0;});
 
 function gameOver(){
 running=false;cancelAnimationFrame(animId);
+if(score>highScore){highScore=score;saveHighScore();}
+playGameOver();
 const o=document.getElementById('overlay');o.style.display='flex';
 o.innerHTML='<h1 style="color:'+(lives<=0?'#f00':'#0ff')+'">'+(lives<=0?'GAME<br>OVER':'VITORIA!')+
-'</h1><p style="color:#0ff">PONTUACAO: <span style="color:#ff0">'+score+'</span></p>'+
+'</h1><p style="color:#0ff">PONTUACAO: <span style="color:#ff0">'+score+'</span><br>RECORDE: <span style="color:#ff0">'+highScore+'</span></p>'+
 '<button class="btn" onclick="startGame()">JOGAR NOVAMENTE</button>';
 }
 
-document.addEventListener('keydown',e=>{keys[e.key]=true;if(e.key===' ')e.preventDefault();});
+document.addEventListener('keydown',e=>{initAudio();keys[e.key]=true;if(e.key===' ')e.preventDefault();});
 document.addEventListener('keyup',e=>{keys[e.key]=false;});
 const lb=document.getElementById('lb'),rb=document.getElementById('rb'),fb=document.getElementById('fb');
-lb.addEventListener('touchstart',e=>{e.preventDefault();keys['ArrowLeft']=true;});
+lb.addEventListener('touchstart',e=>{initAudio();e.preventDefault();keys['ArrowLeft']=true;});
 lb.addEventListener('touchend',e=>{e.preventDefault();keys['ArrowLeft']=false;});
-rb.addEventListener('touchstart',e=>{e.preventDefault();keys['ArrowRight']=true;});
+rb.addEventListener('touchstart',e=>{initAudio();e.preventDefault();keys['ArrowRight']=true;});
 rb.addEventListener('touchend',e=>{e.preventDefault();keys['ArrowRight']=false;});
-fb.addEventListener('touchstart',e=>{e.preventDefault();fpress=true;});
+fb.addEventListener('touchstart',e=>{initAudio();e.preventDefault();fpress=true;});
 fb.addEventListener('touchend',e=>{e.preventDefault();fpress=false;});
-lb.addEventListener('mousedown',()=>keys['ArrowLeft']=true);lb.addEventListener('mouseup',()=>keys['ArrowLeft']=false);
-rb.addEventListener('mousedown',()=>keys['ArrowRight']=true);rb.addEventListener('mouseup',()=>keys['ArrowRight']=false);
-fb.addEventListener('mousedown',()=>fpress=true);fb.addEventListener('mouseup',()=>fpress=false);
+lb.addEventListener('mousedown',()=>{initAudio();keys['ArrowLeft']=true;});lb.addEventListener('mouseup',()=>keys['ArrowLeft']=false);
+rb.addEventListener('mousedown',()=>{initAudio();keys['ArrowRight']=true;});rb.addEventListener('mouseup',()=>keys['ArrowRight']=false);
+fb.addEventListener('mousedown',()=>{initAudio();fpress=true;});fb.addEventListener('mouseup',()=>fpress=false);
 </script>
 </body>
 </html>
