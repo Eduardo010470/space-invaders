@@ -58,6 +58,8 @@ const POWERUP_SPAWN_PROBABILITY=0.24;
 const POWERUP_DURATION_FRAMES=520;
 const SHIELD_HIT_DEPLETION=90;
 const VICTORY_ANIMATION_FRAMES=90;
+const MAX_BULLETS_NORMAL=3;
+const MAX_BULLETS_DOUBLE=6;
 const VICTORY_TONE={freq:520,dur:0.18,vol:0.12,slide:840};
 let highScore=parseInt(localStorage.getItem(HS_KEY)||'0',10)||0;
 let leaderboard=loadLeaderboard();
@@ -219,7 +221,7 @@ updateHUD();
 }
 
 function spawnPowerUp(inv){
-if(Math.random()>POWERUP_SPAWN_PROBABILITY)return;
+if(Math.random()>=POWERUP_SPAWN_PROBABILITY)return;
 const type=Math.random()<0.5?'double':'shield';
 powerups.push({x:inv.x+10,y:inv.y+8,w:12,h:12,type,vy:1.7});
 }
@@ -285,7 +287,7 @@ if(victoryTimer===0){
 if(keys['ArrowLeft']||keys['a'])player.x=Math.max(0,player.x-4);
 if(keys['ArrowRight']||keys['d'])player.x=Math.min(444,player.x+4);
 if(fcool>0)fcool--;
-const maxBullets=player.doubleTimer>0?6:3;
+const maxBullets=player.doubleTimer>0?MAX_BULLETS_DOUBLE:MAX_BULLETS_NORMAL;
 if((keys[' ']||fpress)&&fcool===0&&bullets.length<maxBullets){
 if(player.doubleTimer>0){
 bullets.push({x:player.x+9,y:player.y});
