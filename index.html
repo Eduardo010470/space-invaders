@@ -49,7 +49,10 @@ let score=0,lives=3,level=1,running=false,animId;
 let player,bullets,invaders,ebullets,shields,ufo;
 let idir=1,itimer=0,idelay=40,keys={},fpress=false,fcool=0,exps=[],fc=0,utimer=0;
 const HS_KEY='space_invaders_high_score';
-let highScore=Number(localStorage.getItem(HS_KEY)||0);
+const parsedHighScore=parseInt(localStorage.getItem(HS_KEY)||'0',10);
+let highScore=Number.isFinite(parsedHighScore)?parsedHighScore:0;
+const GAME_OVER_DELAY=140;
+const MARCH_BASE_DELAY=16,MARCH_MIN_DELAY=5,MARCH_TOTAL_INVADERS=55,MARCH_SPEED_STEP=4;
 let ac,master,marchStep=0,marchClock=0,ufoOsc,ufoGain;
 
 function initAudio(){
@@ -73,6 +76,7 @@ o.connect(g);g.connect(master);o.start(t);o.stop(t+dur+0.02);
 
 function playNoise(dur,vol){
 if(!ac||!master)return;
+dur=Math.max(0.03,dur||0);
 const t=ac.currentTime,buf=ac.createBuffer(1,Math.max(1,Math.floor(ac.sampleRate*dur)),ac.sampleRate);
 const d=buf.getChannelData(0);
 for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*(1-i/d.length);
@@ -85,7 +89,7 @@ s.connect(f);f.connect(g);g.connect(master);s.start(t);s.stop(t+dur);
 function playShoot(){playTone('square',880,0.08,0.08,520);}
 function playExplosion(){playNoise(0.14,0.18);playTone('triangle',190,0.12,0.06,90);}
 function playPlayerDeath(){playTone('sawtooth',260,0.3,0.1,70);playNoise(0.22,0.14);}
-function playGameOver(){playTone('triangle',220,0.24,0.09,140);setTimeout(()=>playTone('triangle',170,0.35,0.09,90),140);}
+function playGameOver(){playTone('triangle',220,0.24,0.09,140);setTimeout(()=>playTone('triangle',170,0.35,0.09,90),GAME_OVER_DELAY);}
 function playMarch(){
 const seq=[180,220,260,220];
 playTone('square',seq[marchStep%seq.length],0.06,0.04);
@@ -168,7 +172,7 @@ itimer++;
 const alive=invaders.filter(i=>i.alive);
 if(alive.length>0){
 marchClock++;
-const marchDelay=Math.max(5,16-Math.floor((55-alive.length)/4));
+const marchDelay=Math.max(MARCH_MIN_DELAY,MARCH_BASE_DELAY-Math.floor((MARCH_TOTAL_INVADERS-alive.length)/MARCH_SPEED_STEP));
 if(marchClock>=marchDelay){marchClock=0;playMarch();}
 }
 if(itimer>=idelay){
