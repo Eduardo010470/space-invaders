@@ -54,6 +54,11 @@ let idir=1,itimer=0,idelay=40,keys={},fpress=false,fcool=0,exps=[],fc=0,utimer=0
 let victoryTimer=0,introAnimId=0,introAliens=[],introStars=[];
 const HS_KEY='space_invaders_high_score';
 const LB_KEY='space_invaders_top10';
+const POWERUP_SPAWN_CHANCE=0.24;
+const POWERUP_DURATION_FRAMES=520;
+const SHIELD_HIT_DEPLETION=90;
+const VICTORY_ANIMATION_FRAMES=90;
+const VICTORY_TONE={freq:520,dur:0.18,vol:0.12,slide:840};
 let highScore=parseInt(localStorage.getItem(HS_KEY)||'0',10)||0;
 let leaderboard=loadLeaderboard();
 const GAME_OVER_DELAY_MS=140;
@@ -214,14 +219,14 @@ updateHUD();
 }
 
 function spawnPowerUp(inv){
-if(Math.random()>0.24)return;
+if(Math.random()>POWERUP_SPAWN_CHANCE)return;
 const type=Math.random()<0.5?'double':'shield';
 powerups.push({x:inv.x+10,y:inv.y+8,w:12,h:12,type,vy:1.7});
 }
 
 function activatePowerUp(type){
-if(type==='double')player.doubleTimer=Math.max(player.doubleTimer,520);
-if(type==='shield')player.shieldTimer=Math.max(player.shieldTimer,520);
+if(type==='double')player.doubleTimer=Math.max(player.doubleTimer,POWERUP_DURATION_FRAMES);
+if(type==='shield')player.shieldTimer=Math.max(player.shieldTimer,POWERUP_DURATION_FRAMES);
 exps.push({x:player.x+18,y:player.y+10,life:18,c:type==='double'?'#0ff':'#7fffd4'});
 }
 
@@ -325,7 +330,6 @@ if(ufo){ufo.x+=2;if(ufo.x>530)ufo=null;}
 
 bullets.forEach((b,bi)=>{
 alive.forEach(inv=>{
-if(!inv.alive)return;
 if(b.x>inv.x&&b.x<inv.x+inv.w&&b.y>inv.y&&b.y<inv.y+inv.h){
 inv.alive=false;bullets.splice(bi,1);
 const p=inv.t===3?30:inv.t===2?20:10;addScore(p);playExplosion();spawnPowerUp(inv);
@@ -361,7 +365,7 @@ if(b.x+3>bl.x&&b.x<bl.x+5&&b.y+10>bl.y&&b.y<bl.y+5){bl.alive=false;ebullets.spli
 }));
 if(b.x+3>player.x&&b.x<player.x+36&&b.y+10>player.y&&b.y<player.y+20){
 if(player.shieldTimer>0){
-player.shieldTimer=Math.max(0,player.shieldTimer-90);
+player.shieldTimer=Math.max(0,player.shieldTimer-SHIELD_HIT_DEPLETION);
 exps.push({x:b.x,y:b.y,life:14,c:'#7fffd4'});
 }else{
 lives--;
@@ -376,7 +380,8 @@ updateHUD();
 
 alive.forEach(i=>{if(i.y+i.h>=465)gameOver();});
 if(invaders.every(i=>!i.alive)&&victoryTimer===0){
-victoryTimer=90;ebullets=[];bullets=[];ufo=null;playTone('triangle',520,0.18,0.12,840);
+victoryTimer=VICTORY_ANIMATION_FRAMES;ebullets=[];bullets=[];ufo=null;
+playTone('triangle',VICTORY_TONE.freq,VICTORY_TONE.dur,VICTORY_TONE.vol,VICTORY_TONE.slide);
 }
 if(victoryTimer>0){
 if(fc%6===0)exps.push({x:80+Math.random()*320,y:120+Math.random()*180,life:18,c:['#0ff','#ff0','#f0f'][Math.floor(Math.random()*3)]});
