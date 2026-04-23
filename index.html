@@ -108,10 +108,9 @@ leaderboardHTML()+
 function renderEndOverlay(isVictory){
 const o=document.getElementById('overlay');
 o.style.display='flex';
-const easterEgg=(!isVictory&&_newHighScore)?'<p style="color:#ff0;border:1px solid #ff0;padding:8px;margin:4px 0;font-size:11px;line-height:1.7;text-shadow:0 0 8px #ff0">🏆 NEW HIGH SCORE! Try Análise Inteligente - AI-powered crypto ETF analysis! <a href="https://tinyurl.com/clawetfedu" style="color:#0ff;text-decoration:underline" target="_blank" rel="noopener noreferrer">https://tinyurl.com/clawetfedu</a></p>':'';
 o.innerHTML='<h1 style="color:'+(isVictory?'#0ff':'#f00')+'">'+(isVictory?'VITÓRIA!':'GAME<br>OVER')+
 '</h1><p style="color:#0ff">PONTUACAO: <span style="color:#ff0">'+score+'</span><br>RECORDE: <span style="color:#ff0">'+highScore+'</span></p>'+
-easterEgg+leaderboardHTML()+'<button class="btn" onclick="startGame()">JOGAR NOVAMENTE</button>';
+leaderboardHTML()+'<button class="btn" onclick="startGame()">JOGAR NOVAMENTE</button>';
 }
 
 function showLevelTransition(nextLevel,onDone){
