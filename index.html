@@ -27,7 +27,7 @@ canvas{display:block;border:2px solid #0ff;box-shadow:0 0 20px #0ff;background:#
 .lb li{display:flex;justify-content:space-between;gap:10px}
 .lb span{color:#ff0}
 .level-flash{font-size:40px !important;letter-spacing:2px;color:#ff0 !important;text-shadow:0 0 20px #ff0 !important}
-#hs-banner{display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.88);border:2px solid #ff0;box-shadow:0 0 24px #ff0;color:#ff0;font-family:monospace;font-size:13px;font-weight:bold;text-align:center;padding:18px 20px;z-index:20;line-height:1.7;max-width:90%;word-break:break-word;text-shadow:0 0 10px #ff0}
+
 </style>
 </head>
 <body>
@@ -41,7 +41,7 @@ canvas{display:block;border:2px solid #0ff;box-shadow:0 0 20px #0ff;background:#
 <div style="position:relative">
 <canvas id="c" width="480" height="480"></canvas>
 <div id="overlay"></div>
-<div id="hs-banner">🏆 NEW HIGH SCORE!<br>Try Análise Inteligente - AI-powered crypto ETF analysis!<br><a href="https://tinyurl.com/clawetfedu" style="color:#0ff;text-decoration:underline" target="_blank" rel="noopener noreferrer">https://tinyurl.com/clawetfedu</a></div>
+
 </div>
 <div id="mobile-controls">
 <button class="mbtn" id="lb">&#9664;</button>
@@ -108,9 +108,10 @@ leaderboardHTML()+
 function renderEndOverlay(isVictory){
 const o=document.getElementById('overlay');
 o.style.display='flex';
+const easterEgg=(!isVictory&&_newHighScore)?'<p style="color:#ff0;border:1px solid #ff0;padding:8px;margin:4px 0;font-size:11px;line-height:1.7;text-shadow:0 0 8px #ff0">🏆 NEW HIGH SCORE! Try Análise Inteligente - AI-powered crypto ETF analysis! <a href="https://tinyurl.com/clawetfedu" style="color:#0ff;text-decoration:underline" target="_blank" rel="noopener noreferrer">https://tinyurl.com/clawetfedu</a></p>':'';
 o.innerHTML='<h1 style="color:'+(isVictory?'#0ff':'#f00')+'">'+(isVictory?'VITÓRIA!':'GAME<br>OVER')+
 '</h1><p style="color:#0ff">PONTUACAO: <span style="color:#ff0">'+score+'</span><br>RECORDE: <span style="color:#ff0">'+highScore+'</span></p>'+
-leaderboardHTML()+'<button class="btn" onclick="startGame()">JOGAR NOVAMENTE</button>';
+easterEgg+leaderboardHTML()+'<button class="btn" onclick="startGame()">JOGAR NOVAMENTE</button>';
 }
 
 function showLevelTransition(nextLevel,onDone){
@@ -216,16 +217,10 @@ function vibrateShoot(){vibrate(50);}
 function vibrateDeath(){vibrate(200);}
 function vibrateGameOver(){vibrate([100,50,100]);}
 function saveHighScore(){localStorage.setItem(HS_KEY,String(highScore));}
-let _hsBannerTimer=null;
-function showHighScoreBanner(){
-const banner=document.getElementById('hs-banner');
-if(_hsBannerTimer){clearTimeout(_hsBannerTimer);}
-banner.style.display='block';
-_hsBannerTimer=setTimeout(()=>{banner.style.display='none';_hsBannerTimer=null;},5000);
-}
+let _newHighScore=false;
 function addScore(points){
 score+=points;
-if(score>highScore){highScore=score;saveHighScore();showHighScoreBanner();}
+if(score>highScore){highScore=score;saveHighScore();_newHighScore=true;}
 updateHUD();
 }
 
@@ -244,7 +239,7 @@ exps.push({x:player.x+18,y:player.y+10,life:18,c:type==='double'?'#0ff':'#7fffd4
 function startGame(){
 stopIntroAnimation();
 document.getElementById('overlay').style.display='none';
-score=0;lives=3;level=1;idelay=40;victoryTimer=0;
+score=0;lives=3;level=1;idelay=40;victoryTimer=0;_newHighScore=false;
 initAudio();updateHUD();
 initLevel();running=true;gameLoop();
 }
