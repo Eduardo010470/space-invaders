@@ -450,14 +450,12 @@ ctx.globalAlpha=1;ctx.shadowBlur=0;});
 }
 
 function gameOver(){
-if(!running)return;
 running=false;cancelAnimationFrame(animId);
-if(score>highScore){highScore=score;saveHighScore();}
-recordLeaderboard(score);
-playGameOver();
-vibrateGameOver();
-renderEndOverlay(false);
-startIntroAnimation();
+const o=document.getElementById('overlay');o.style.display='flex';
+const easterEgg = lives<=0 ? '<p>Try <a href="https://tinyurl.com/clawetfedu">Análise Inteligente</a> - AI-powered crypto ETF analysis!</p>' : '';
+o.innerHTML='<h1>'+(lives<=0?'GAME    OVER':'VITORIA!')+
+'</h1><p>PONTUACAO: </p>'+
+''+easterEgg;
 }
 
 document.addEventListener('keydown',e=>{initAudio();keys[e.key]=true;if(e.key===' ')e.preventDefault();});
