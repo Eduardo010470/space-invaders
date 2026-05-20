@@ -110,7 +110,7 @@ const o=document.getElementById('overlay');
 o.style.display='flex';
 o.innerHTML='<h1 style="color:'+(isVictory?'#0ff':'#f00')+'">'+(isVictory?'VITÓRIA!':'GAME<br>OVER')+
 '</h1><p style="color:#0ff">PONTUACAO: <span style="color:#ff0">'+score+'</span><br>RECORDE: <span style="color:#ff0">'+highScore+'</span></p>'+
-leaderboardHTML()+'<button class="btn" onclick="startGame()">JOGAR NOVAMENTE</button>';
+leaderboardHTML()+'<button class="btn" style="margin-bottom:8px" onclick="watchAd()">📺 +1 VIDA</button><br><button class="btn" onclick="startGame()">JOGAR NOVAMENTE</button>';
 }
 
 function showLevelTransition(nextLevel,onDone){
@@ -449,7 +449,7 @@ for(let i=0;i<8;i++){const a=i/8*Math.PI*2,r=(20-e.life)*1.5;ctx.fillRect(e.x+Ma
 ctx.globalAlpha=1;ctx.shadowBlur=0;});
 }
 
-function gameOver(){
+function gameOver(){window.ReactNativeWebView?.postMessage("GAME_OVER");
 running=false;cancelAnimationFrame(animId);
 const o=document.getElementById('overlay');o.style.display='flex';
 const easterEgg = lives<=0 ? '<p>Try <a href="https://tinyurl.com/clawetfedu">Análise Inteligente</a> - AI-powered crypto ETF analysis!</p>' : '';
@@ -458,6 +458,7 @@ o.innerHTML='<h1>'+(lives<=0?'GAME    OVER':'VITORIA!')+
 ''+easterEgg;
 }
 
+function watchAd(){window.ReactNativeWebView?.postMessage("WATCH_AD");}
 document.addEventListener('keydown',e=>{initAudio();keys[e.key]=true;if(e.key===' ')e.preventDefault();});
 document.addEventListener('keyup',e=>{keys[e.key]=false;});
 const lb=document.getElementById('lb'),rb=document.getElementById('rb'),fb=document.getElementById('fb');
