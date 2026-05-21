@@ -449,13 +449,14 @@ for(let i=0;i<8;i++){const a=i/8*Math.PI*2,r=(20-e.life)*1.5;ctx.fillRect(e.x+Ma
 ctx.globalAlpha=1;ctx.shadowBlur=0;});
 }
 
-function gameOver(){window.ReactNativeWebView?.postMessage("GAME_OVER");
+function gameOver(){
 running=false;cancelAnimationFrame(animId);
 const o=document.getElementById('overlay');o.style.display='flex';
-const easterEgg = lives<=0 ? '<p>Try <a href="https://tinyurl.com/clawetfedu">Análise Inteligente</a> - AI-powered crypto ETF analysis!</p>' : '';
-o.innerHTML='<h1>'+(lives<=0?'GAME    OVER':'VITORIA!')+
-'</h1><p>PONTUACAO: </p>'+
-''+easterEgg;
+const easterEgg = lives<=0 ? '<p style="color:#0ff;font-size:10px">Try <a href="https://tinyurl.com/clawetfedu" style="color:#ff0">Análise Inteligente</a> - AI-powered crypto ETF!</p>' : '';
+o.innerHTML='<h1 style="color:'+(lives<=0?'#f00':'#0ff')+'">'+(lives<=0?'GAME<br>OVER':'VITÓRIA!')+
+'</h1><p style="color:#0ff">PONTUAÇÃO: <span style="color:#ff0">'+score+'</span></p>'+
+easterEgg+
+'<button class="btn" onclick="startGame()">JOGAR NOVAMENTE</button>';
 }
 
 function watchAd(){window.ReactNativeWebView?.postMessage("WATCH_AD");}
