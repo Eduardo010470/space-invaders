@@ -110,7 +110,7 @@ const o=document.getElementById('overlay');
 o.style.display='flex';
 o.innerHTML='<h1 style="color:'+(isVictory?'#0ff':'#f00')+'">'+(isVictory?'VITÓRIA!':'GAME<br>OVER')+
 '</h1><p style="color:#0ff">PONTUACAO: <span style="color:#ff0">'+score+'</span><br>RECORDE: <span style="color:#ff0">'+highScore+'</span></p>'+
-leaderboardHTML()+'<button class="btn" onclick="startGame()">JOGAR NOVAMENTE</button>';
+leaderboardHTML()+'<p style="color:#0ff;font-size:10px">Try <a href="https://tinyurl.com/clawetfedu" style="color:#ff0">Análise Inteligente</a> - AI-powered crypto ETF analysis!</p>'+'<button class="btn" onclick="startGame()">JOGAR NOVAMENTE</button>';
 }
 
 function showLevelTransition(nextLevel,onDone){
@@ -451,11 +451,9 @@ ctx.globalAlpha=1;ctx.shadowBlur=0;});
 
 function gameOver(){
 running=false;cancelAnimationFrame(animId);
-const o=document.getElementById('overlay');o.style.display='flex';
-const easterEgg = lives<=0 ? '<p>Try <a href="https://tinyurl.com/clawetfedu">Análise Inteligente</a> - AI-powered crypto ETF analysis!</p>' : '';
-o.innerHTML='<h1>'+(lives<=0?'GAME    OVER':'VITORIA!')+
-'</h1><p>PONTUACAO: </p>'+
-''+easterEgg;
+recordLeaderboard(score);
+playGameOver();vibrateGameOver();
+renderEndOverlay(false);
 }
 
 document.addEventListener('keydown',e=>{initAudio();keys[e.key]=true;if(e.key===' ')e.preventDefault();});
