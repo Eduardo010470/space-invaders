@@ -52,6 +52,7 @@ canvas{display:block;border:2px solid #0ff;box-shadow:0 0 20px #0ff;background:#
 const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
 let score=0,lives=3,level=1,running=false,animId;
 let player,bullets,invaders,ebullets,shields,ufo,powerups;
+let playerName=localStorage.getItem('si2_player_name')||'';
 let idir=1,itimer=0,idelay=40,keys={},fpress=false,fcool=0,exps=[],fc=0,utimer=0;
 let victoryTimer=0,introAnimId=0,introAliens=[],introStars=[];
 const HS_KEY='space_invaders_high_score';
@@ -71,26 +72,54 @@ let ac,master,marchStep=0,marchClock=0,ufoOsc,ufoGain;
 const canUseVibration=typeof navigator!=='undefined'&&typeof navigator.vibrate==='function'&&window.isSecureContext;
 let vibrationEnabled=false;
 
-function loadLeaderboard(){
-try{
-const parsed=JSON.parse(localStorage.getItem(LB_KEY)||'[]');
-if(!Array.isArray(parsed))return [];
-return parsed.filter(r=>r&&Number.isFinite(r.score)).sort((a,b)=>b.score-a.score).slice(0,10);
-}catch{return [];}
+const SUPABASE_URL='https://kqkxulsuevfuhmuvhxsp.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtxa3h1bHN1ZXZmdWhtdXZoeHNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NjYxMTYsImV4cCI6MjA5MTM0MjExNn0.dwPtvv9lvu_urSgno57Iu4POAKP2qANbSw5fKEcscdE';
+
+async function fetchLeaderboard(){
+  try{
+    const res=await fetch(SUPABASE_URL+'/rest/v1/si2_scores?select=name,score,created_at&order=score.desc&limit=10',{
+      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
+    });
+    const data=await res.json();
+    if(Array.isArray(data)){
+      leaderboard=data.map(r=>({'name':r.name,'score':r.score,'date':r.created_at?r.created_at.slice(0,10):''}) );
+      updateLeaderboardUI();
+    }
+  }catch(e){console.log('Leaderboard fetch error',e);}
 }
 
+async function saveLeaderboardOnline(name,pts){
+  try{
+    await fetch(SUPABASE_URL+'/rest/v1/si2_scores',{
+      method:'POST',
+      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+      body:JSON.stringify({name:name,score:pts})
+    });
+    await fetchLeaderboard();
+  }catch(e){console.log('Save error',e);}
+}
+
+function loadLeaderboard(){
+  try{
+    const parsed=JSON.parse(localStorage.getItem(LB_KEY)||'[]');
+    if(!Array.isArray(parsed))return [];
+    return parsed.filter(r=>r&&Number.isFinite(r.score)).sort((a,b)=>b.score-a.score).slice(0,10);
+  }catch{return [];}
+}
 function saveLeaderboard(){localStorage.setItem(LB_KEY,JSON.stringify(leaderboard));}
 
 function recordLeaderboard(points){
 if(points<=0)return;
-leaderboard.push({score:points,date:new Date().toLocaleDateString('pt-BR')});
+const name=playerName||'Jogador';
+leaderboard.push({name:name,score:points,date:new Date().toLocaleDateString('pt-BR')});
 leaderboard=leaderboard.sort((a,b)=>b.score-a.score).slice(0,10);
 saveLeaderboard();
+saveLeaderboardOnline(name,points);
 }
 
 function leaderboardHTML(){
 const rows=leaderboard.length
-?leaderboard.map((r,i)=>`<li><span>#${i+1} ${r.date||''}</span><strong>${r.score}</strong></li>`).join('')
+?leaderboard.map((r,i)=>`<li><span>#${i+1} ${r.name||r.date||''}</span><strong>${r.score}</strong></li>`).join('')
 :'<li><span>Sem registros</span><strong>---</strong></li>';
 return `<div class="lb"><h3>TOP 10</h3><ol>${rows}</ol></div>`;
 }
@@ -102,7 +131,9 @@ o.innerHTML='<h1>SPACE<br>INVADERS</h1>'+
 '<p>ROSA=30pts | VERDE=20pts | AMARELO=10pts<br>OVNI=100-300pts BONUS</p>'+
 '<p>TECLADO: SETAS + ESPACO<br>CELULAR: BOTOES ABAIXO</p>'+
 leaderboardHTML()+
-'<button class="btn" onclick="startGame()">INICIAR</button>';
+'<input id="pname" type="text" maxlength="20" placeholder="Seu nome" value="'+playerName+'" style="padding:8px 12px;background:#111;border:1px solid #0ff;color:#0ff;font-size:14px;text-align:center;border-radius:6px;width:180px">'+
+'<button class="btn" onclick="setNameAndStart()">INICIAR</button>';
+setTimeout(()=>{const i=document.getElementById('pname');if(i)i.focus();},100);
 }
 
 function renderEndOverlay(isVictory){
@@ -235,6 +266,22 @@ if(type==='shield')player.shieldTimer=Math.max(player.shieldTimer,POWERUP_DURATI
 exps.push({x:player.x+18,y:player.y+10,life:18,c:type==='double'?'#0ff':'#7fffd4'});
 }
 
+function setNameAndStart(){
+  const input=document.getElementById('pname');
+  if(input&&input.value.trim()){
+    playerName=input.value.trim();
+    localStorage.setItem('si2_player_name',playerName);
+  }
+  startGame();
+}
+function updateLeaderboardUI(){
+  const lbEls=document.querySelectorAll('.lb ol');
+  lbEls.forEach(el=>{
+    el.innerHTML=leaderboard.length
+      ?leaderboard.map((r,i)=>`<li><span>#${i+1} ${r.name||''}</span><strong>${r.score}</strong></li>`).join('')
+      :'<li><span>Sem registros</span><strong>---</strong></li>';
+  });
+}
 function startGame(){
 stopIntroAnimation();
 document.getElementById('overlay').style.display='none';
@@ -469,7 +516,7 @@ lb.addEventListener('mousedown',()=>{initAudio();keys['ArrowLeft']=true;});lb.ad
 rb.addEventListener('mousedown',()=>{initAudio();keys['ArrowRight']=true;});rb.addEventListener('mouseup',()=>keys['ArrowRight']=false);
 fb.addEventListener('mousedown',()=>{initAudio();fpress=true;});fb.addEventListener('mouseup',()=>fpress=false);
 
-renderStartOverlay();
+fetchLeaderboard().then(()=>renderStartOverlay());
 startIntroAnimation();
 </script>
 </body>
