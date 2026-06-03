@@ -121,7 +121,8 @@ function leaderboardHTML(){
 const rows=leaderboard.length
 ?leaderboard.map((r,i)=>`<li><span>#${i+1} ${r.name||r.date||''}</span><strong>${r.score}</strong></li>`).join('')
 :'<li><span>Sem registros</span><strong>---</strong></li>';
-return `<div class="lb"><h3>TOP 10</h3><ol>${rows}</ol></div>`;
+const myBest=highScore>0?`<p style="color:#ff0;font-size:11px;margin-top:6px">Seu recorde: <strong>${highScore}</strong></p>`:'';
+return `<div class="lb"><h3>TOP 10</h3><ol>${rows}</ol>${myBest}</div>`;
 }
 
 function renderStartOverlay(){
