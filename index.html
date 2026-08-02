@@ -54,6 +54,15 @@ const GAME_OVER_DELAY_MS=140;
 const MARCH_BASE_DELAY=16,MARCH_MIN_DELAY=5,MARCH_TOTAL_INVADERS=55,MARCH_SPEED_STEP=4;
 let ac,master,marchStep=0,marchClock=0,ufoOsc,ufoGain;
 
+const PU_PROB=0.3,PU_DUR=600;
+let powerups=[];
+function spawnPU(inv){
+  if(Math.random()>=PU_PROB)return;
+  const type=Math.random()<.5?'double':'shield';
+  powerups.push({x:inv.x+10,y:inv.y+8,type,vy:1.5});}
+function activPU(type){
+  if(type==='double')player.doubleTimer=Math.max(player.doubleTimer||0,PU_DUR);
+  else player.shieldTimer=Math.max(player.shieldTimer||0,PU_DUR);}
 function initAudio(){
 if(!ac){
 ac=new (window.AudioContext||window.webkitAudioContext)();
@@ -122,6 +131,7 @@ initLevel();running=true;gameLoop();
 }
 
 function initLevel(){
+  powerups=[];
 player={x:220,y:440,w:36,h:20};
 bullets=[];ebullets=[];exps=[];ufo=null;
 idir=1;itimer=0;idelay=Math.max(8,40-(level-1)*5);
@@ -189,11 +199,26 @@ utimer++;
 if(utimer>600&&!ufo){ufo={x:-50,y:20};utimer=0;startUfoSound();}
 if(ufo){ufo.x+=2;if(ufo.x>530)ufo=null;}
 
-bullets.forEach((b,bi)=>{
+// Powerup movement
+  powerups=powerups.filter(p=>p.y<H);
+  powerups.forEach(p=>{p.y+=p.vy;});
+  // Powerup collision with player
+  if(player){
+    powerups=powerups.filter(p=>{
+      if(p.x>player.x&&p.x<player.x+36&&p.y>player.y&&p.y<player.y+36){activPU(p.type);return false;}
+      return true;});
+  }
+  // Draw powerups
+  powerups.forEach(p=>{
+    ctx.shadowBlur=12;
+    if(p.type==='double'){ctx.fillStyle='#0ff';ctx.shadowColor='#0ff';ctx.font='bold 14px monospace';ctx.fillText('2X',p.x,p.y+12);ctx.strokeStyle='#0ff';ctx.lineWidth=2;ctx.strokeRect(p.x-2,p.y-2,24,18);}
+    else{ctx.fillStyle='#7fffd4';ctx.shadowColor='#7fffd4';ctx.beginPath();ctx.arc(p.x+10,p.y+10,10,0,Math.PI*2);ctx.fill();ctx.fillStyle='#000';ctx.font='bold 11px monospace';ctx.fillText('SH',p.x+2,p.y+14);}
+    ctx.shadowBlur=0;});
+  bullets.forEach((b,bi)=>{
 alive.forEach(inv=>{
 if(b.x>inv.x&&b.x<inv.x+inv.w&&b.y>inv.y&&b.y<inv.y+inv.h){
 inv.alive=false;bullets.splice(bi,1);
-const p=inv.t===3?30:inv.t===2?20:10;addScore(p);playExplosion();
+const p=inv.t===3?30:inv.t===2?20:10;addScore(p);playExplosion();spawnPU(inv);
 exps.push({x:inv.x+14,y:inv.y+10,life:20,c:inv.t===3?'#f0f':inv.t===2?'#0f0':'#ff0'});
 }});
 if(ufo&&b.x>ufo.x&&b.x<ufo.x+40&&b.y>ufo.y&&b.y<ufo.y+14){
@@ -201,14 +226,44 @@ addScore(100+Math.floor(Math.random()*200));playExplosion();
 exps.push({x:ufo.x+20,y:ufo.y+7,life:20,c:'#f00'});
 ufo=null;bullets.splice(bi,1);
 }
-bullets.forEach((b,bi)=>{
+// Powerup movement
+  powerups=powerups.filter(p=>p.y<H);
+  powerups.forEach(p=>{p.y+=p.vy;});
+  // Powerup collision with player
+  if(player){
+    powerups=powerups.filter(p=>{
+      if(p.x>player.x&&p.x<player.x+36&&p.y>player.y&&p.y<player.y+36){activPU(p.type);return false;}
+      return true;});
+  }
+  // Draw powerups
+  powerups.forEach(p=>{
+    ctx.shadowBlur=12;
+    if(p.type==='double'){ctx.fillStyle='#0ff';ctx.shadowColor='#0ff';ctx.font='bold 14px monospace';ctx.fillText('2X',p.x,p.y+12);ctx.strokeStyle='#0ff';ctx.lineWidth=2;ctx.strokeRect(p.x-2,p.y-2,24,18);}
+    else{ctx.fillStyle='#7fffd4';ctx.shadowColor='#7fffd4';ctx.beginPath();ctx.arc(p.x+10,p.y+10,10,0,Math.PI*2);ctx.fill();ctx.fillStyle='#000';ctx.font='bold 11px monospace';ctx.fillText('SH',p.x+2,p.y+14);}
+    ctx.shadowBlur=0;});
+  bullets.forEach((b,bi)=>{
 shields.forEach(sh=>sh.forEach(bl=>{
 if(!bl.alive)return;
 if(b.x+3>bl.x&&b.x<bl.x+5&&b.y+12>bl.y&&b.y<bl.y+5){bl.alive=false;bullets.splice(bi,1);}
 }));});
 });
 
-ebullets.forEach((b,bi)=>{
+e// Powerup movement
+  powerups=powerups.filter(p=>p.y<H);
+  powerups.forEach(p=>{p.y+=p.vy;});
+  // Powerup collision with player
+  if(player){
+    powerups=powerups.filter(p=>{
+      if(p.x>player.x&&p.x<player.x+36&&p.y>player.y&&p.y<player.y+36){activPU(p.type);return false;}
+      return true;});
+  }
+  // Draw powerups
+  powerups.forEach(p=>{
+    ctx.shadowBlur=12;
+    if(p.type==='double'){ctx.fillStyle='#0ff';ctx.shadowColor='#0ff';ctx.font='bold 14px monospace';ctx.fillText('2X',p.x,p.y+12);ctx.strokeStyle='#0ff';ctx.lineWidth=2;ctx.strokeRect(p.x-2,p.y-2,24,18);}
+    else{ctx.fillStyle='#7fffd4';ctx.shadowColor='#7fffd4';ctx.beginPath();ctx.arc(p.x+10,p.y+10,10,0,Math.PI*2);ctx.fill();ctx.fillStyle='#000';ctx.font='bold 11px monospace';ctx.fillText('SH',p.x+2,p.y+14);}
+    ctx.shadowBlur=0;});
+  bullets.forEach((b,bi)=>{
 shields.forEach(sh=>sh.forEach(bl=>{
 if(!bl.alive)return;
 if(b.x+3>bl.x&&b.x<bl.x+5&&b.y+10>bl.y&&b.y<bl.y+5){bl.alive=false;ebullets.splice(bi,1);}
