@@ -264,7 +264,7 @@ playGameOver();
 const o=document.getElementById('overlay');o.style.display='flex';
 o.innerHTML='<h1 style="color:'+(lives<=0?'#f00':'#0ff')+'">'+(lives<=0?'GAME<br>OVER':'VITORIA!')+
 '</h1><p style="color:#0ff">PONTUACAO: <span style="color:#ff0">'+score+'</span><br>RECORDE: <span style="color:#ff0">'+highScore+'</span></p>'+
-'<button class="btn" onclick="startGame()">JOGAR NOVAMENTE</button>';
+'<p style="color:#7fffd4;font-size:10px;margin-top:8px">Conheça o Análise Inteligente<br>ETF cripto com IA 🚀<br><a href="https://tinyurl.com/clawetfedu" style="color:#0ff">tinyurl.com/clawetfedu</a></p>'+ '<button class="btn" onclick="startGame()">JOGAR NOVAMENTE</button>';
 }
 
 document.addEventListener('keydown',e=>{initAudio();keys[e.key]=true;if(e.key===' ')e.preventDefault();});
