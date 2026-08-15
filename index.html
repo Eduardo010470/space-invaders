@@ -12,7 +12,7 @@ body{background:#000;display:flex;flex-direction:column;align-items:center;justi
 #lives{color:#f0f;text-shadow:0 0 8px #f0f}
 #lvl{color:#ff0;text-shadow:0 0 8px #ff0}
 canvas{display:block;border:2px solid #0ff;box-shadow:0 0 20px #0ff;background:#000;max-width:95vw}
-#mobile-controls{display:flex;gap:12px;margin-top:8px}
+#mobile-controls{display:flex;justify-content:space-between;width:100%;max-width:420px;margin-top:8px;padding:0 8px;box-sizing:border-box}#dpad{display:flex;gap:12px}#fb{width:78px;height:78px;font-size:30px}
 .mbtn{background:rgba(0,255,255,0.1);border:2px solid #0ff;color:#0ff;font-size:18px;width:70px;height:70px;cursor:pointer;border-radius:8px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 10px #0ff;touch-action:manipulation}
 .mbtn:active{background:rgba(0,255,255,0.4)}
 #overlay{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,0.85);z-index:10;gap:16px}
@@ -39,9 +39,7 @@ canvas{display:block;border:2px solid #0ff;box-shadow:0 0 20px #0ff;background:#
 </div>
 </div>
 <div id="mobile-controls">
-<button class="mbtn" id="lb">&#9664;</button>
-<button class="mbtn" id="fb">&#9679;</button>
-<button class="mbtn" id="rb">&#9654;</button>
+<div id="dpad"><button class="mbtn" id="lb">&#9664;</button><button class="mbtn" id="rb">&#9654;</button></div><button class="mbtn" id="fb">&#9679;</button>
 </div>
 <script>
 const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
